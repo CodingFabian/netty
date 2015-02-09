@@ -57,6 +57,15 @@ public class UniqueName implements Comparable<UniqueName> {
         this.name = name;
     }
 
+    protected UniqueName(String name) {
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+
+        id = nextId.incrementAndGet();
+        this.name = name;
+    }
+
     /**
      * Validates the given arguments.  This method does not do anything on its own, but must be
      * overridden by its subclasses.

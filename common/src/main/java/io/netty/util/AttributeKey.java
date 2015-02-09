@@ -29,14 +29,54 @@ import java.util.concurrent.ConcurrentMap;
 @SuppressWarnings({ "UnusedDeclaration", "deprecation" }) // 'T' is used only at compile time
 public final class AttributeKey<T> extends UniqueName {
 
-    private static final ConcurrentMap<String, Boolean> names = PlatformDependent.newConcurrentHashMap();
+    @SuppressWarnings("rawtypes")
+    private static final ConcurrentMap<String, AttributeKey> names = PlatformDependent.newConcurrentHashMap();
 
     /**
-     * Creates a new {@link AttributeKey} with the specified {@code name}.
+     * Creates a new {@link AttributeKey} with the specified {@param name} or return the already existing
+     * {@link AttributeKey} for the given name.
      */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("unchecked")
     public static <T> AttributeKey<T> valueOf(String name) {
-        return new AttributeKey<T>(name);
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        AttributeKey<T> option = names.get(name);
+        if (option == null) {
+            option = new AttributeKey<T>(name);
+            AttributeKey<T> old = names.putIfAbsent(name, option);
+            if (old != null) {
+                option = old;
+            }
+        }
+        return option;
+    }
+
+    /**
+     * Returns {@code true} if a {@link AttributeKey} exists for the given {@code name}.
+     */
+    public static boolean exists(String name) {
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        return names.containsKey(name);
+    }
+
+    /**
+     * Creates a new {@link AttributeKey} for the given {@param name} or fail with an
+     * {@link IllegalArgumentException} if a {@link AttributeKey} for the given {@param name} exists.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> AttributeKey<T> createOrFail(String name) {
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        AttributeKey<T> option = new AttributeKey<T>(name);
+        AttributeKey<T> old = names.putIfAbsent(name, option);
+        if (old != null) {
+            throw new IllegalArgumentException(String.format("'%s' is already in use", name));
+        }
+        return option;
     }
 
     /**
@@ -44,6 +84,6 @@ public final class AttributeKey<T> extends UniqueName {
      */
     @Deprecated
     public AttributeKey(String name) {
-        super(names, name);
+        super(name);
     }
 }

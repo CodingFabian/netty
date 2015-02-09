@@ -34,7 +34,8 @@ import java.util.concurrent.ConcurrentMap;
 @SuppressWarnings("deprecation")
 public class ChannelOption<T> extends UniqueName {
 
-    private static final ConcurrentMap<String, Boolean> names = PlatformDependent.newConcurrentHashMap();
+    @SuppressWarnings("rawtypes")
+    private static final ConcurrentMap<String, ChannelOption> names = PlatformDependent.newConcurrentHashMap();
 
     public static final ChannelOption<ByteBufAllocator> ALLOCATOR = valueOf("ALLOCATOR");
     public static final ChannelOption<RecvByteBufAllocator> RCVBUF_ALLOCATOR = valueOf("RCVBUF_ALLOCATOR");
@@ -85,10 +86,50 @@ public class ChannelOption<T> extends UniqueName {
             valueOf("DATAGRAM_CHANNEL_ACTIVE_ON_REGISTRATION");
 
     /**
-     * Creates a new {@link ChannelOption} with the specified {@code name}.
+     * Creates a new {@link ChannelOption} with the specified {@param name} or return the already existing
+     * {@link ChannelOption} for the given name.
      */
+    @SuppressWarnings("unchecked")
     public static <T> ChannelOption<T> valueOf(String name) {
-        return new ChannelOption<T>(name);
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        ChannelOption<T> option = names.get(name);
+        if (option == null) {
+            option = new ChannelOption<T>(name);
+            ChannelOption<T> old = names.putIfAbsent(name, option);
+            if (old != null) {
+                option = old;
+            }
+        }
+        return option;
+    }
+
+    /**
+     * Returns {@code true} if a {@link ChannelOption} exists for the given {@code name}.
+     */
+    public static boolean exists(String name) {
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        return names.containsKey(name);
+    }
+
+    /**
+     * Creates a new {@link ChannelOption} for the given {@param name} or fail with an
+     * {@link IllegalArgumentException} if a {@link ChannelOption} for the given {@param name} exists.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> ChannelOption<T> createOrFail(String name) {
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        ChannelOption<T> option = new ChannelOption<T>(name);
+        ChannelOption<T> old = names.putIfAbsent(name, option);
+        if (old != null) {
+            throw new IllegalArgumentException(String.format("'%s' is already in use", name));
+        }
+        return option;
     }
 
     /**
@@ -96,7 +137,7 @@ public class ChannelOption<T> extends UniqueName {
      */
     @Deprecated
     protected ChannelOption(String name) {
-        super(names, name);
+        super(name);
     }
 
     /**
