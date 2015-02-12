@@ -13,34 +13,15 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.netty.channel;
+package io.netty.channel.unix;
 
-import java.io.IOException;
+public interface DomainSocketChannel extends UnixChannel {
+    @Override
+    DomainSocketAddress remoteAddress();
 
-public interface FileDescriptor {
+    @Override
+    DomainSocketAddress localAddress();
 
-    /**
-     * An invalid file descriptor which was closed before.
-     */
-    FileDescriptor INVALID = new FileDescriptor() {
-        @Override
-        public int intValue() {
-            throw new IllegalStateException("invalid file descriptor");
-        }
-
-        @Override
-        public void close() {
-            // NOOP
-        }
-    };
-
-    /**
-     * Return the int value of the filedescriptor.
-     */
-    int intValue();
-
-    /**
-     * Close the file descriptor.
-     */
-    void close() throws IOException;
+    @Override
+    DomainSocketChannelConfig config();
 }
